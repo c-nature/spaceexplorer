@@ -20,7 +20,7 @@
             font-family: 'Roboto', sans-serif;
             background-color: var(--bg-color);
             color: #e0e0e0;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 25% 25%, rgba(0, 246, 255, 0.1), transparent 30%),
                 radial-gradient(circle at 75% 75%, rgba(0, 246, 255, 0.05), transparent 25%);
             overflow-x: hidden;
@@ -29,7 +29,7 @@
         }
         
         .header-title, .tab-button, .futuristic-btn {
-             font-family: 'Orbitron', sans-serif;
+            font-family: 'Orbitron', sans-serif;
         }
 
         .text-glow {
@@ -355,6 +355,14 @@
                 if (!response.ok) throw new Error(`SYSTEM ERROR: ${response.status}`);
                 const data = await response.json();
                 displaySearchResults(data.collection.items);
+                
+                // NEW: Award the 'First Search' badge after a successful search
+                if (window.parent && window.parent.awardBadge) {
+                    window.parent.awardBadge('firstsearchspaceexplorer', 'First Search Space Explorer');
+                } else {
+                    console.error("Parent window's awardBadge function is not available.");
+                }
+
             } catch (error) { showMessage('DATABASE SEARCH FAILED.'); } 
             finally { hideLoader(); }
         }
@@ -432,7 +440,7 @@
             card.innerHTML = `
                 <div class="h-56 bg-black relative">
                     <img src="${cardThumbnailUrl}" alt="${escapedTitle}" class="w-full h-full object-cover" 
-                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/020813/00f6ff?text=SIGNAL+LOST';">
+                                onerror="this.onerror=null;this.src='https://placehold.co/600x400/020813/00f6ff?text=SIGNAL+LOST';">
                     ${playIcon}
                 </div>
                 <div class="p-4">
