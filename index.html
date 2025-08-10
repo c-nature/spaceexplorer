@@ -349,6 +349,12 @@
         async function searchImages() {
             const query = document.getElementById('search-query').value.trim();
             if (!query) { showMessage('ERROR: Search query cannot be empty.'); return; }
+            
+            // NEW: Check for the badge before making the API call
+            const user = window.parent.localStorage.getItem('user');
+            const userObj = user ? JSON.parse(user) : null;
+            const hasBadge = userObj && userObj.badges && userObj.badges.includes('firstsearchspaceexplorer');
+
             clearResults(); showLoader();
             try {
                 const response = await fetch(`${APP_API_BASE_URL}/search/${encodeURIComponent(query)}`);
@@ -356,11 +362,14 @@
                 const data = await response.json();
                 displaySearchResults(data.collection.items);
                 
-                // NEW: Award the 'First Search' badge after a successful search
-                if (window.parent && window.parent.awardBadge) {
+                // NEW: Award the 'First Search' badge after a successful search and if the user doesn't have it yet
+                if (data.collection.items.length > 0 && window.parent && window.parent.awardBadge && !hasBadge) {
                     window.parent.awardBadge('firstsearchspaceexplorer', 'First Search Space Explorer');
-                } else {
-                    console.error("Parent window's awardBadge function is not available.");
+                } else if (data.collection.items.length > 0 && hasBadge) {
+                    // Do nothing if the badge has already been awarded.
+                    console.log("Badge 'firstsearchspaceexplorer' already awarded. Not triggering notification.");
+                } else if (data.collection.items.length === 0) {
+                    console.log("Search unsuccessful. Not awarding badge.");
                 }
 
             } catch (error) { showMessage('DATABASE SEARCH FAILED.'); } 
