@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Confetti.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --glow-color: #00f6ff;
@@ -142,6 +144,31 @@
             animation: l2 1s infinite linear;
         }
         @keyframes l2 {to{transform: rotate(1turn)}}
+
+        /* --- Styles for the badge notification pop-up --- */
+        #badge-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 2000;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+        #badge-notification.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #badge-notification h2, #badge-notification p {
+            text-shadow: 
+                -2px -2px 0 #000, 2px -2px 0 #000, 
+                -2px 2px 0 #000, 2px 2px 0 #000, 
+                4px 4px 8px rgba(0,0,0,0.6);
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 sm:p-6 lg:p-8">
@@ -195,6 +222,19 @@
         </div>
     </div>
 
+    <!-- Badge Notification Pop-up -->
+    <div id="badge-notification" class="hidden">
+        <h2 class="text-3xl font-bold text-yellow-300 mb-4">New Badge Unlocked!</h2>
+        <img id="badge-notification-img" src="" alt="New Badge" class="w-48 h-48 mb-4">
+        <p id="badge-notification-name" class="text-2xl text-white font-semibold"></p>
+    </div>
+
+    <!-- Badge Sound Effect -->
+    <audio id="badgeSoundElement" preload="auto">
+        <source src="https://c-nature.github.io/smartypants/badge.wav" type="audio/wav">
+        <source src="https://c-nature.github.io/smartypants/badge.mp3" type="audio/mpeg">
+    </audio>
+
 
     <script>
         const APP_API_BASE_URL = 'https://smartypantsbe.onrender.com/api/user/nasa';
@@ -213,6 +253,42 @@
         const planets = new Set(['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
         let searchedPlanets = new Set();
         let solarSystemBadgeAwardedThisSession = false;
+
+        /**
+         * Shows the badge notification pop-up with sound and confetti.
+         * @param {string} badgeName - The filename of the badge (e.g., 'smartystarter3').
+         * @param {string} badgeDisplayName - The display-friendly name (e.g., 'Smarty Starter').
+         */
+        function showBadgeNotification(badgeName, badgeDisplayName) {
+            const badgeNotification = document.getElementById('badge-notification');
+            const badgeNotificationImg = document.getElementById('badge-notification-img');
+            const badgeNotificationName = document.getElementById('badge-notification-name');
+            const badgeSoundElement = document.getElementById('badgeSoundElement');
+
+            if (badgeSoundElement) {
+                badgeSoundElement.currentTime = 0;
+                badgeSoundElement.play().catch(e => console.warn("Error playing badge sound:", e));
+            }
+
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            badgeNotificationImg.src = `https://c-nature.github.io/smartypants/Badges/${badgeName}.png`;
+            badgeNotificationName.textContent = badgeDisplayName;
+            badgeNotification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                badgeNotification.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                badgeNotification.classList.remove('show');
+                setTimeout(() => {
+                    badgeNotification.classList.add('hidden');
+                }, 500);
+            }, 4000);
+        }
 
         /**
          * Universal badge awarding function.
@@ -260,6 +336,8 @@
                     console.log(`Badge '${badgeName}' awarded successfully via API.`);
                     user.badges.push(badgeName);
                     localStorage.setItem('user', JSON.stringify(user));
+                    // Trigger the local notification for standalone mode
+                    showBadgeNotification(badgeName, badgeDisplayName);
                 } else {
                     console.log("Badge already awarded or other error.", result.message);
                 }
