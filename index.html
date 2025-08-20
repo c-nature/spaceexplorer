@@ -133,16 +133,20 @@
             pointer-events: none;
         }
         
-        @keyframes flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% {
-                text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px var(--glow-color), 0 0 80px var(--glow-color), 0 0 90px var(--glow-color), 0 0 100px var(--glow-color), 0 0 150px var(--glow-color);
+        /* --- PERFORMANCE FIX --- */
+        /* Replaced the expensive text-shadow flicker with a more performant opacity pulse */
+        @keyframes pulse-glow {
+            0%, 100% {
+                text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px var(--glow-color), 0 0 80px var(--glow-color);
+                opacity: 0.8;
             }
-            20%, 24%, 55% {
-                text-shadow: none;
+            50% {
+                text-shadow: 0 0 4px #fff, 0 0 12px #fff, 0 0 22px #fff, 0 0 50px var(--glow-color), 0 0 90px var(--glow-color);
+                opacity: 1;
             }
         }
         .header-title {
-            animation: flicker 3s infinite alternate;
+            animation: pulse-glow 4s infinite alternate;
         }
 
         .loader {
