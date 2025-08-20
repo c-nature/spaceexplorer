@@ -223,6 +223,14 @@
         // Store the current media URL for opening in a new window from the modal title
         let currentModalMediaUrl = '';
 
+        // --- Badge Tracking Logic ---
+        // A set of all planets for easy, case-insensitive checking.
+        const planets = new Set(['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
+        // A set to store the unique planets searched for during this session.
+        let searchedPlanets = new Set();
+        // A flag to prevent the badge award from triggering multiple times in a single session.
+        let solarSystemBadgeAwardedThisSession = false;
+
         /**
          * Changes the active tab and clears previous results.
          * @param {string} tabName - The name of the tab to activate ('apod', 'mars', 'epic', 'search').
@@ -350,7 +358,6 @@
             const query = document.getElementById('search-query').value.trim();
             if (!query) { showMessage('ERROR: Search query cannot be empty.'); return; }
             
-            // NEW: Check for the badge before making the API call
             const user = window.parent.localStorage.getItem('user');
             const userObj = user ? JSON.parse(user) : null;
             const hasBadge = userObj && userObj.badges && userObj.badges.includes('firstsearchspaceexplorer');
@@ -362,14 +369,32 @@
                 const data = await response.json();
                 displaySearchResults(data.collection.items);
                 
-                // NEW: Award the 'First Search' badge after a successful search and if the user doesn't have it yet
+                // Award the 'First Search' badge after a successful search if the user doesn't have it yet
                 if (data.collection.items.length > 0 && window.parent && window.parent.awardBadge && !hasBadge) {
                     window.parent.awardBadge('firstsearchspaceexplorer', 'First Search Space Explorer');
                 } else if (data.collection.items.length > 0 && hasBadge) {
-                    // Do nothing if the badge has already been awarded.
                     console.log("Badge 'firstsearchspaceexplorer' already awarded. Not triggering notification.");
                 } else if (data.collection.items.length === 0) {
                     console.log("Search unsuccessful. Not awarding badge.");
+                }
+
+                // --- NEW: Logic for Solar System Searcher badge ---
+                const normalizedQuery = query.toLowerCase();
+                // Check if the search query is one of the planets.
+                if (planets.has(normalizedQuery)) {
+                    searchedPlanets.add(normalizedQuery);
+                    console.log('Planet searched:', normalizedQuery, '| Unique planets found this session:', searchedPlanets.size);
+
+                    // If all 8 unique planets have been searched for and the badge hasn't been awarded this session...
+                    if (searchedPlanets.size === 8 && !solarSystemBadgeAwardedThisSession) {
+                        console.log('All 8 planets searched! Attempting to award badge...');
+                        if (window.parent && window.parent.awardBadge) {
+                            // Call the parent window's function to award the badge.
+                            // The parent function handles the logic of checking if the user already has it permanently.
+                            window.parent.awardBadge('solarsystemsearcher', 'Solar System Searcher');
+                            solarSystemBadgeAwardedThisSession = true; // Set flag to prevent re-triggering in this session.
+                        }
+                    }
                 }
 
             } catch (error) { showMessage('DATABASE SEARCH FAILED.'); } 
@@ -449,7 +474,7 @@
             card.innerHTML = `
                 <div class="h-56 bg-black relative">
                     <img src="${cardThumbnailUrl}" alt="${escapedTitle}" class="w-full h-full object-cover" 
-                                onerror="this.onerror=null;this.src='https://placehold.co/600x400/020813/00f6ff?text=SIGNAL+LOST';">
+                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/020813/00f6ff?text=SIGNAL+LOST';">
                     ${playIcon}
                 </div>
                 <div class="p-4">
