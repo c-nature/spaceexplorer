@@ -133,22 +133,6 @@
             pointer-events: none;
         }
         
-        /* --- PERFORMANCE FIX --- */
-        /* Replaced the expensive text-shadow flicker with a more performant opacity pulse */
-        @keyframes pulse-glow {
-            0%, 100% {
-                text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 19px #fff, 0 0 40px var(--glow-color), 0 0 80px var(--glow-color);
-                opacity: 0.8;
-            }
-            50% {
-                text-shadow: 0 0 4px #fff, 0 0 12px #fff, 0 0 22px #fff, 0 0 50px var(--glow-color), 0 0 90px var(--glow-color);
-                opacity: 1;
-            }
-        }
-        .header-title {
-            animation: pulse-glow 4s infinite alternate;
-        }
-
         .loader {
             width: 50px;
             aspect-ratio: 1;
