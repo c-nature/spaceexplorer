@@ -208,24 +208,18 @@
         const modalTitle = document.getElementById('modal-title');
         const modalDescription = document.getElementById('modal-description');
 
-        // Store the current media URL for opening in a new window from the modal title
         let currentModalMediaUrl = '';
 
-        // --- Badge Tracking Logic ---
         const planets = new Set(['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']);
         let searchedPlanets = new Set();
         let solarSystemBadgeAwardedThisSession = false;
 
         /**
          * Universal badge awarding function.
-         * It checks if the game is in an iframe and calls the parent, 
-         * otherwise it makes a direct API call.
-         * @param {string} badgeName - The internal name of the badge (e.g., 'solarsystemsearcher').
-         * @param {string} badgeDisplayName - The user-facing name (e.g., 'Solar System Searcher').
          */
         async function awardBadge(badgeName, badgeDisplayName) {
-            // Method 1: If embedded, use the parent window for the full UI experience.
-            if (window.parent && window.parent.awardBadge) {
+            // Method 1: If embedded, use the parent window.
+            if (window.self !== window.top && window.parent.awardBadge) {
                 console.log(`Awarding badge '${badgeName}' via parent window.`);
                 window.parent.awardBadge(badgeName, badgeDisplayName);
                 return;
@@ -238,7 +232,7 @@
                 const userString = localStorage.getItem('user');
                 
                 if (!token || !userString) {
-                    console.log("Direct badge award failed: User not logged in (no token/user in localStorage).");
+                    console.log("Direct badge award failed: User not logged in.");
                     return;
                 }
 
@@ -249,7 +243,6 @@
                     return;
                 }
                 
-                // The base URL for user actions is different from the NASA proxy
                 const userApiUrl = APP_API_BASE_URL.replace('/nasa', '');
 
                 const response = await fetch(`${userApiUrl}/award-badge`, {
@@ -265,22 +258,16 @@
 
                 if (result.status === "Success" && !result.alreadyAwarded) {
                     console.log(`Badge '${badgeName}' awarded successfully via API.`);
-                    // Update localStorage to reflect the new badge
                     user.badges.push(badgeName);
                     localStorage.setItem('user', JSON.stringify(user));
                 } else {
-                    console.log("Badge already awarded according to server or other error.", result.message);
+                    console.log("Badge already awarded or other error.", result.message);
                 }
             } catch (error) {
                 console.error("Error awarding badge directly via API:", error);
             }
         }
 
-
-        /**
-         * Changes the active tab and clears previous results.
-         * @param {string} tabName - The name of the tab to activate ('apod', 'mars', 'epic', 'search').
-         */
         function changeTab(tabName) {
             const tabs = ['apod', 'mars', 'epic', 'search'];
             tabs.forEach(tab => {
@@ -309,7 +296,6 @@
             modalVideo.classList.add('hidden');
             modalImage.src = '';
             modalVideo.src = '';
-
             modalTitle.textContent = title;
             modalDescription.innerHTML = description;
             currentModalMediaUrl = url;
@@ -380,7 +366,6 @@
             const query = document.getElementById('search-query').value.trim();
             if (!query) { showMessage('ERROR: Search query cannot be empty.'); return; }
             
-            // Use its own localStorage since it could be in a new window
             const userString = localStorage.getItem('user');
             const userObj = userString ? JSON.parse(userString) : null;
 
@@ -524,6 +509,21 @@
         }
 
         window.onload = () => {
+            // New logic for handling auth token and user data from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const authToken = urlParams.get('authToken');
+            const userData = urlParams.get('userData');
+
+            if (authToken && userData) {
+                console.log("Auth data found in URL, setting up standalone session...");
+                // Save the data to this window's localStorage
+                localStorage.setItem('token', authToken);
+                localStorage.setItem('user', userData);
+                
+                // Optional: remove the params from the URL to keep it clean
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
             const marsDateInput = document.getElementById('mars-date');
             const today = new Date();
             today.setDate(today.getDate() - 5); 
